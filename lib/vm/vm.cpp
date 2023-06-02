@@ -10,6 +10,8 @@
 #include "host/mock/wasi_crypto_module.h"
 #include "host/mock/wasi_nn_module.h"
 #include "host/mock/wasmedge_process_module.h"
+#include "host/mock/wasmedge_tensorflow_module.h"
+#include "host/mock/wasmedge_tensorflowlite_module.h"
 
 namespace WasmEdge {
 namespace VM {
@@ -88,15 +90,24 @@ void VM::unsafeLoadPlugInHosts() {
           "wasi_crypto"sv, "wasi_crypto_symmetric"sv));
   PlugInModInsts.push_back(createPluginModule<Host::WasmEdgeProcessModuleMock>(
       "wasmedge_process"sv, "wasmedge_process"sv));
+  PlugInModInsts.push_back(
+      createPluginModule<Host::WasmEdgeTensorflowModuleMock>(
+          "wasmedge_tensorflow"sv, "wasmedge_tensorflow"sv));
+  PlugInModInsts.push_back(
+      createPluginModule<Host::WasmEdgeTensorflowLiteModuleMock>(
+          "wasmedge_tensorflowlite"sv, "wasmedge_tensorflowlite"sv));
 
   // Load the other non-official plugins.
   for (const auto &Plugin : Plugin::Plugin::plugins()) {
     if (Conf.isForbiddenPlugins(Plugin.name())) {
       continue;
     }
-    // Skip WasmEdge_Process, wasi_nn, and wasi_crypto.
+    // Skip WasmEdge_Process, WasmEdge_Tensorflow, WasmEdge_TensorflowLite,
+    // wasi_nn, and wasi_crypto.
     if (Plugin.name() == "wasmedge_process"sv || Plugin.name() == "wasi_nn"sv ||
-        Plugin.name() == "wasi_crypto"sv) {
+        Plugin.name() == "wasi_crypto"sv ||
+        Plugin.name() == "wasmedge_tensorflow"sv ||
+        Plugin.name() == "wasmedge_tensorflowlite"sv) {
       continue;
     }
     for (const auto &Module : Plugin.modules()) {
