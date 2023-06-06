@@ -8,7 +8,6 @@
 #include "common/log.h"
 
 #include <atomic>
-#include <csetjmp>
 #include <csignal>
 #include <cstdint>
 #include <utility>
@@ -103,7 +102,7 @@ thread_local Fault *localHandler = nullptr;
 
 #if defined(SA_SIGINFO)
 [[noreturn]] void signalHandler(int Signal, siginfo_t *Siginfo [[maybe_unused]],
-                                void *) noexcept {
+                                void *) {
   {
     // Unblock current signal
     sigset_t Set;
@@ -195,7 +194,7 @@ Fault::~Fault() noexcept {
 
 [[noreturn]] inline void Fault::emitFault(ErrCode Error) {
   assuming(localHandler != nullptr);
-  longjmp(localHandler->Buffer, static_cast<int>(Error.operator uint32_t()));
+  throw Error;
 }
 
 } // namespace WasmEdge

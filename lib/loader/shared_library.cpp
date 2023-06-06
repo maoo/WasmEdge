@@ -57,6 +57,13 @@ namespace winapi = boost::winapi;
 #error Unsupported os!
 #endif
 
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+extern "C" {
+extern void __register_frame(void *);
+extern void __deregister_frame(void *);
+}
+#endif
+
 namespace {
 inline constexpr uint64_t roundDownPageBoundary(const uint64_t Value) {
 // ARM64 Mac has a special page size
@@ -145,6 +152,10 @@ Expect<void> SharedLibrary::load(const AST::AOTSection &AOTSec) noexcept {
       break;
     case 3: // BSS
       break;
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+    case 4: // EHFrame
+      EHFrameAddress = reinterpret_cast<void *>(Binary + Offset);
+#endif
 #if WASMEDGE_OS_WINDOWS
     case 4: // PData
       PDataAddress = reinterpret_cast<void *>(Binary + Offset);
@@ -167,6 +178,11 @@ Expect<void> SharedLibrary::load(const AST::AOTSection &AOTSec) noexcept {
   TypesAddress = AOTSec.getTypesAddress();
   CodesAddress = AOTSec.getCodesAddress();
 
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+  if (EHFrameAddress) {
+    __register_frame(EHFrameAddress);
+  }
+#endif
 #if WASMEDGE_OS_WINDOWS
   if (PDataSize != 0) {
     winapi::RtlAddFunctionTable(
@@ -180,6 +196,11 @@ Expect<void> SharedLibrary::load(const AST::AOTSection &AOTSec) noexcept {
 
 void SharedLibrary::unload() noexcept {
   if (Binary) {
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+    if (EHFrameAddress) {
+      __deregister_frame(EHFrameAddress);
+    }
+#endif
 #if WASMEDGE_OS_WINDOWS
     if (PDataSize != 0) {
       winapi::RtlDeleteFunctionTable(

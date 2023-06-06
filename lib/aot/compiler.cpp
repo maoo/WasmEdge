@@ -4892,13 +4892,14 @@ Expect<void> outputNativeLibrary(const std::filesystem::path &OutputPath,
             "-dylib", "-demangle", "-macosx_version_min", OSVersion.c_str(),
             "-syslibroot",
             "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
-            ObjectName.u8string().c_str(), "-o",
+            "--eh-frame-hdr", ObjectName.u8string().c_str(), "-o",
             OutputPath.u8string().c_str() //,
                                           //"-lSystem"
       },
 #elif WASMEDGE_OS_LINUX
   LinkResult = lld::elf::link(
-      std::initializer_list<const char *>{"ld.lld", "--shared", "--gc-sections",
+      std::initializer_list<const char *>{"ld.lld", "--eh-frame-hdr",
+                                          "--shared", "--gc-sections",
                                           "--discard-all", ObjectName.c_str(),
                                           "-o", OutputPath.u8string().c_str()},
 #elif WASMEDGE_OS_WINDOWS
@@ -5100,7 +5101,8 @@ Expect<void> outputWasmLibrary(const std::filesystem::path &OutputPath,
       if (Section.getSize() == 0) {
         continue;
       }
-      if (!Section.isText() && !Section.isData() && !Section.isBSS()) {
+      if (!Section.isEHFrame() && !Section.isPData() && !Section.isText() &&
+          !Section.isData() && !Section.isBSS()) {
         continue;
       }
       ++SectionCount;
@@ -5118,7 +5120,7 @@ Expect<void> outputWasmLibrary(const std::filesystem::path &OutputPath,
       } else {
         Content.assign(Res.begin(), Res.end());
       }
-      if (Section.isPData()) {
+      if (Section.isEHFrame() || Section.isPData()) {
         WriteByte(OS, UINT8_C(4));
       } else if (Section.isText()) {
         WriteByte(OS, UINT8_C(1));

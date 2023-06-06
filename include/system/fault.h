@@ -16,8 +16,6 @@
 
 #include "common/errcode.h"
 
-#include <csetjmp>
-
 namespace WasmEdge {
 
 class Fault {
@@ -28,13 +26,8 @@ public:
 
   [[noreturn]] static void emitFault(ErrCode Error);
 
-  std::jmp_buf &buffer() noexcept { return Buffer; }
-
 private:
   Fault *Prev = nullptr;
-  std::jmp_buf Buffer;
 };
 
 } // namespace WasmEdge
-
-#define PREPARE_FAULT(f) (static_cast<uint32_t>(setjmp((f).buffer())))
